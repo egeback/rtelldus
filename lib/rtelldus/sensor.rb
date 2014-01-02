@@ -34,7 +34,8 @@ module RTelldus
         if sensor_id.to_i == sensor.id.to_i
           sensor.callback_functions[callback_id].call({
             kind: (data_type == RTelldus::API::TELLSTICK_TEMPERATURE ? :temperature : :humidity),
-            value: value.to_f, time: Time.at(timestamp.to_i)
+            value: value.to_f, timestamp: Time.at(timestamp.to_i),
+            id: sensor_id
           })
         end
       end
