@@ -8,7 +8,7 @@ Supports:
 * Sensors
 * Callbacks
 
-Example:
+Example
 =====
 <pre>
 <code>
