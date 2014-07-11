@@ -2,12 +2,14 @@ RTelldus
 ========
 
 Telldus Tellstick API for Ruby
+
 Supports:
 * Devices
 * Sensors
 * Callbacks
 
-Example
+Example:
+=====
 <pre>
 <code>
 # Get all devices
@@ -27,6 +29,5 @@ device.turn_on
 
 # Turn of device
 device.turn_off
-
 </code>
 </pre>
