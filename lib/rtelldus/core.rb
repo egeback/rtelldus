@@ -17,20 +17,30 @@ module RTelldus
     	:TELLSTICK_STOP,                       512
     )
 
-    enum :sensor_values_type, [
-    	:TELLSTICK_TEMPERATURE,                  1,
-		:TELLSTICK_HUMIDITY,                     2,
-		:TELLSTICK_RAINRATE,                     4,
-		:TELLSTICK_RAINTOTAL,                    8,
-		:TELLSTICK_WINDDIRECTION,               16,
-		:TELLSTICK_WINDAVERAGE,                 32,
-		:TELLSTICK_WINDGUST,                    64
-	]
+    SENSOR_VALUE_TYPES = enum(
+      :TELLSTICK_TEMPERATURE,                  1,
+      :TELLSTICK_HUMIDITY,                     2,
+      :TELLSTICK_RAINRATE,                     4,
+      :TELLSTICK_RAINTOTAL,                    8,
+      :TELLSTICK_WINDDIRECTION,               16,
+      :TELLSTICK_WINDAVERAGE,                 32,
+      :TELLSTICK_WINDGUST,                    64
+    )
+
+    enum :sensor_value_types, [
+      :TELLSTICK_TEMPERATURE,                  1,
+  		:TELLSTICK_HUMIDITY,                     2,
+  		:TELLSTICK_RAINRATE,                     4,
+  		:TELLSTICK_RAINTOTAL,                    8,
+  		:TELLSTICK_WINDDIRECTION,               16,
+  		:TELLSTICK_WINDAVERAGE,                 32,
+  		:TELLSTICK_WINDGUST,                    64
+  	]
 
     TELLSTICK_TEMPERATURE                     = 1
     TELLSTICK_HUMIDITY                        = 2
 
-    enum :error_code, [ 
+    enum :error_code, [
     	:TELLSTICK_SUCCESS,                      0,
         :TELLSTICK_ERROR_NOT_FOUND,             -1,
         :TELLSTICK_ERROR_PERMISSION_DENIED,     -2,
@@ -78,13 +88,13 @@ module RTelldus
     ]
 
     enum :change_types, [
-    	:TELLSTICK_CHANGE_NAME,                  1,
-		:TELLSTICK_CHANGE_PROTOCOL,              2,
-		:TELLSTICK_CHANGE_MODEL,                 3,
-		:TELLSTICK_CHANGE_METHOD,                4,
-		:TELLSTICK_CHANGE_AVAILABLE,             5,
-		:TELLSTICK_CHANGE_FIRMWARE,              6
-	]
+      :TELLSTICK_CHANGE_NAME,                  1,
+  		:TELLSTICK_CHANGE_PROTOCOL,              2,
+  		:TELLSTICK_CHANGE_MODEL,                 3,
+  		:TELLSTICK_CHANGE_METHOD,                4,
+  		:TELLSTICK_CHANGE_AVAILABLE,             5,
+  		:TELLSTICK_CHANGE_FIRMWARE,              6
+  	]
 
     # Callbacks
     #void (WINAPI *TDDeviceEvent)(int deviceId, int method, const char *data, int callbackId, void *context);
@@ -94,33 +104,33 @@ module RTelldus
     #void (WINAPI *TDRawDeviceEvent)(const char *data, int controllerId, int callbackId, void *context);
     callback :TDRawDeviceEvent, [:string, :int, :int, :pointer], :void
     #void (WINAPI *TDSensorEvent)(const char *protocol, const char *model, int id, int dataType, const char *value, int timestamp, int callbackId, void *context);
-    callback :TDSensorEvent, [:string, :string, :int, :int, :string, :int, :int, :pointer], :void
+    callback :TDSensorEvent, [:pointer, :pointer, :int, :int, :pointer, :int, :int, :pointer], :void
     #void (WINAPI *TDControllerEvent)(int controllerId, int changeEvent, int changeType, const char *newValue, int callbackId, void *context);
     callback :TDControllerEvent, [:int, :int, :int, :string, :int], :void
 
-	#Methods
-	#void WINAPI tdInit(void);
-	attach_function :init, :tdInit, [], :void
-	#int WINAPI tdGetNumberOfDevices()
+  	#Methods
+  	#void WINAPI tdInit(void);
+  	attach_function :init, :tdInit, [], :void
+  	#int WINAPI tdGetNumberOfDevices()
     attach_function :number_of_devices, :tdGetNumberOfDevices, [], :int
     #int WINAPI tdRegisterDeviceEvent( TDDeviceEvent eventFunction, void *context );
     attach_function :register_device_event, :tdRegisterDeviceEvent, [:TDDeviceEvent, :pointer], :int
     #int WINAPI tdRegisterDeviceChangeEvent( TDDeviceChangeEvent eventFunction, void *context);
-	attach_function :register_raw_device_event, :tdRegisterRawDeviceEvent, [:TDRawDeviceEvent, :pointer], :int
+	  attach_function :register_raw_device_event, :tdRegisterRawDeviceEvent, [:TDRawDeviceEvent, :pointer], :int
     #int WINAPI tdRegisterRawDeviceEvent( TDRawDeviceEvent eventFunction, void *context );
-	attach_function :register_device_change_event, :tdRegisterDeviceChangeEvent, [:TDDeviceChangeEvent, :pointer], :int
+	  attach_function :register_device_change_event, :tdRegisterDeviceChangeEvent, [:TDDeviceChangeEvent, :pointer], :int
     #int WINAPI tdRegisterSensorEvent( TDSensorEvent eventFunction, void *context );
     attach_function :register_sensor_event,:tdRegisterSensorEvent, [:TDSensorEvent, :pointer], :int
     #int WINAPI tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
-	#attach_function :register_controller_event, :tdRegisterControllerEvent, [:TDControllerEvent, :pointer], :int  # Version 2.1.2
+	  #attach_function :register_controller_event, :tdRegisterControllerEvent, [:TDControllerEvent, :pointer], :int  # Version 2.1.2
     #int WINAPI tdUnregisterCallback( int callbackId );
-	attach_function :unregister_callback, :tdUnregisterCallback, [:int], :void
-	#void WINAPI tdClose(void);
-	attach_function :close, :tdClose, [], :void
-	 #void WINAPI tdReleaseString(char *string)
+	  attach_function :unregister_callback, :tdUnregisterCallback, [:int], :void
+	  #void WINAPI tdClose(void);
+	  attach_function :close, :tdClose, [], :void
+	  #void WINAPI tdReleaseString(char *string)
     attach_function :release_string, :tdReleaseString, [:pointer], :void
 
-	#int WINAPI tdTurnOn(int intDeviceId);
+    #int WINAPI tdTurnOn(int intDeviceId);
     attach_function :turn_on, :tdTurnOn, [:int], :error_code
     #int WINAPI tdTurnOff(int intDeviceId);
     attach_function :turn_off, :tdTurnOff, [:int], :error_code
@@ -168,7 +178,7 @@ module RTelldus
     attach_function :model, :tdGetModel, [:int], :pointer
     #bool WINAPI tdSetModel(int intDeviceId, const char *intModel);
     attach_function :set_model, :tdSetModel, [:int, :string], :bool
-    
+
     #char * WINAPI tdGetDeviceParameter(int intDeviceId, const char *strName, const char *defaultValue);
     attach_function :get_device_parameter, :tdGetDeviceParameter, [:int, :string, :string], :pointer
     #bool WINAPI tdSetDeviceParameter(int intDeviceId, const char *strName, const char* strValue);
@@ -177,10 +187,10 @@ module RTelldus
     #int WINAPI tdAddDevice();
     attach_function :add_device, :tdAddDevice, [], :int
     #bool WINAPI tdRemoveDevice(int intDeviceId);
-    attach_function :remove_device, :tdRemoveDevice, [:int], :bool    
+    attach_function :remove_device, :tdRemoveDevice, [:int], :bool
 
     #int WINAPI tdSendRawCommand(const char *command, int reserved);
-    attach_function :send_raw_command, :tdSendRawCommand, [:string, :int], :int 
+    attach_function :send_raw_command, :tdSendRawCommand, [:string, :int], :int
 
     #void WINAPI tdConnectTellStickController(int vid, int pid, const char *serial);
     attach_function :connect_tellstick_controller, :tdConnectTellStickController, [:int, :int, :string], :void
@@ -202,8 +212,13 @@ module RTelldus
     #int WINAPI tdRemoveController(int controllerId);
     #attach_function :tdRemoveController, [:int], :int # Version 2.1.2
 
-    def self.read_string(pointer)
-      string = pointer.read_string_to_null.dup
+    def self.read_string(pointer, start=nil, stop=nil)
+      string = nil
+      if (start==nil || stop ==nil)
+          string = pointer.read_string_to_null.dup
+      else
+          string = pointer.get_string(start, stop)
+      end
       release_string pointer
       string
     end
@@ -211,9 +226,18 @@ module RTelldus
     def self.supported_methods
       METHODS.to_hash
     end
-            
+
     def self.all_supported_methods_int
-      supported_methods.values.inject(0) { |result, element| result | element }      
+      supported_methods.values.inject(0) { |result, element| result | element }
+    end
+
+    def self.supported_sensor_value_types
+      SENSOR_VALUE_TYPES.to_hash
+    end
+
+    def self.all_supported_sensor_value_types_int
+      puts "hej"
+      supported_sensor_value_types.values.inject(0) { |result, element| result | element }
     end
   end
 end

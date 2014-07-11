@@ -5,6 +5,14 @@ require_relative 'rtelldus/device'
 require_relative 'rtelldus/sensor'
 
 module RTelldus
+  @@callback_functions = {}
+
+  def self.init
+    RTelldus::API.init
+  end
+
+  init
+
   # Get all the devices. That is all the devices Tellstick know about
   # (the content of the file usually located in /etc/tellstick.conf).
   #
@@ -12,14 +20,12 @@ module RTelldus
   def self.devices
     devices = []
     RTelldus::API.number_of_devices.times do |i|
-      devices << Device.new(API.get_device_id(i), API.name(i))
+      devices << Device.new(API.get_device_id(i))
     end
     devices
   end
 
-
   def self.sensors
-    RTelldus::API.init
     sensors = []
     result = API::TELLSTICK_SUCCESS
     while(true) do
@@ -29,7 +35,7 @@ module RTelldus
       id = FFI::MemoryPointer.new(:int, 2)
       test = API.sensor(protocol, 32, model, 32, id, data_types)
       if test.to_i == RTelldus::API::TELLSTICK_SUCCESS
-        sensors << Sensor.new(protocol.get_string(0, 32), model.get_string(0, 32), id.get_int32(0))
+        sensors << Sensor.new(protocol.get_string(0, 32), model.get_string(0, 32), id.get_int32(0), data_types.get_int32(0))
       else
         break
       end
@@ -40,7 +46,7 @@ module RTelldus
   def self.from_predefined(key, id)
     predefined = SENSORS[key.to_sym]
     if predefined
-      return Sensor.new(predefined[:protocol], predefined[:model], id)
+      return Sensor.new(predefined[:protocol], predefined[:model], id, predefined[:data_type])
     else
       raise "Unknown sensor product. Predefined sensors: #{SENSORS.map{|k,v| k}.join(', ')}"
     end
@@ -57,28 +63,66 @@ module RTelldus
   def self.find(id)
     id = id.to_i
     name = read_string RTelldus::API.name(id)
-    return nil if name.blank?
+    return nil if name.empty? || name == 'UNKNOWN'
 
-    Device.new id, name
+    Device.new(id)
+
+    #Device.new id, name
+  end
+
+  def self.get(id)
+    self.find(id)
   end
 
   def self.register_raw_event_callback(proc)
-    object_id  = FFI::MemoryPointer.new(:int32)
-    object_id.write_int32(self.object_id)
     callback = Proc.new do |data, controller_id, callback_id, context|
-      device = ObjectSpace._id2ref(context.get_int32(0))
-      device.callback_functions[callback_id].call({
-        id: controller_id,
+      RTelldus::callback_functions[callback_id].call({
+        controller_id: controller_id,
         data: data
       })
     end
-    id = RTelldus::API.register_raw_device_event(callback, object_id)
+    id = RTelldus::API.register_raw_device_event(callback, nil)
     RTelldus::callback_functions[id] = proc
     id
   end
 
+  def self.register_sensor_callback(proc)
+    callback = Proc.new do |p_protocol, p_model, sensor_id, data_type, p_value, timestamp, callback_id, context|
+      protocol = p_protocol.read_string_to_null.dup
+      model = p_model.read_string_to_null.dup
+      value = p_value.read_string_to_null.dup
+
+      RTelldus::callback_functions[callback_id].call({
+        kind: (data_type == RTelldus::API::TELLSTICK_TEMPERATURE ? :temperature : :humidity),
+        value: value.to_f, timestamp: Time.at(timestamp.to_i),
+        id: sensor_id
+      })
+    end
+    id = RTelldus::API.register_sensor_event(callback, nil)
+    self.callback_functions[id] = callback
+    id
+  end
+
+
+  def self.unregister_callback(id)
+    API.unregister_callback(id)
+    RTelldus::callback_functions.delete(id)
+  end
+
+  def self.unregister_callbacks
+    self.callback_functions.each do |k,v|
+      RTelldus::API.unregister_callback(k)
+      RTelldus::callback_functions.delete(k)
+    end
+    RTelldus::callback_functions
+  end
+
+  private
   def self.callback_functions
-    @callback_functions = {} if @callback_functions == nil
-    @callback_functions
+    @@callback_functions
+  end
+
+  def self.read_string(pointer)
+    API.read_string pointer
   end
 end

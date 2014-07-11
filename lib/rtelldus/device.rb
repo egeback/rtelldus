@@ -1,12 +1,26 @@
 module RTelldus
   class Device
-    attr_reader :id, :name 
+    attr_reader :id
 
-    def initialize(id, name)
+    def initialize(id)
       @id = id
-      @name = name
       @callback_functions = {}
-      API.init
+    end
+
+    def to_json(options={})
+      ret_val =  {'id' => @id, 'name' => name.force_encoding("utf-8"), 'model' => model, 'protocol' => protocol,
+                  'supported_commands' => supported_commands,
+                  'last_command' => last_command
+                 }
+      ret_val['status'] = status
+      ret_val['dim_value'] = dim_value if supported_commands.include?(:TELLSTICK_DIM)
+      ret_val.to_json
+    end
+
+    def status
+      methods = API.supported_methods
+      on = methods[last_command] & methods[:TELLSTICK_TURNON] > 1
+      on ? :on : :off
     end
 
     def name
@@ -23,13 +37,13 @@ module RTelldus
 
     def protocol
       read_string API.protocol(id)
-    end      
+    end
 
     def supported_commands
       methods = API.methods(id, API.all_supported_methods_int)
       API.supported_methods.select { |k,v| (methods & v) != 0 }.keys
     end
-  
+
     def has_command?(command)
       supported_commands.include? command
     end
@@ -49,9 +63,9 @@ module RTelldus
 
     def dim_value
       value = read_string API.last_sent_value(id)
-      value == '' ? nil : value.to_i
+      value == '' ? -1 : value.to_i
     end
-   
+
     def dim(value)
       API.dim(id, value)
     end
@@ -62,7 +76,7 @@ module RTelldus
 
     def turn_on
       API.turn_on(id)
-     end
+    end
 
     def turn_off
       API.turn_off(id)
@@ -70,6 +84,22 @@ module RTelldus
 
     def sound_bell
       API.sound_bell(id)
+    end
+
+    def register_raw_callback(proc)
+      callback = Proc.new do |device_id, method, data, callback_id, context|
+        device = ObjectSpace._id2ref(context.get_int32(0))
+        if device_id.to_i == device.id.to_i
+          device.callback_functions[callback_id].call({
+            device_id: device_id,
+            method: method,
+            data: data
+          })
+        end
+      end
+      id = API.register_device_event(callback, nil)
+      @callback_functions[id] = proc
+      id
     end
 
     def register_callback(proc)
@@ -94,7 +124,7 @@ module RTelldus
       API.unregister_callback(id)
       @callback_functions.delete(id)
     end
-    
+
     def callback_functions
       @callback_functions
     end

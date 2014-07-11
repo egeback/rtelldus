@@ -1,2 +1,5 @@
 .DS_Store
-._*.rb
+*.DS_Store
+*/.DS_Store
+
+*._*
